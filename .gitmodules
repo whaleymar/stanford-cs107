@@ -1,0 +1,12 @@
+[submodule "assignment 2/assignment 2/c-vector"]
+	path = assignment 2/assignment 2/c-vector
+	url = https://github.com/Mashpoe/c-vector.git
+[submodule "assignment 2/assignment 2/uthash"]
+	path = assignment 2/assignment 2/uthash
+	url = https://github.com/troydhanson/uthash.git
+[submodule "assignment 2/uthash"]
+	path = assignment 2/uthash
+	url = https://github.com/troydhanson/uthash.git
+[submodule "assignment 2/c-vector"]
+	path = assignment 2/c-vector
+	url = https://github.com/Mashpoe/c-vector.git
