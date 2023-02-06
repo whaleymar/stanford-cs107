@@ -1,7 +1,7 @@
 //This (slightly modified) header file is from the Spring 2008 version of this assignment
 
 /**
- * File: vector.h
+ * File: cvec.h
  * ---------------
  * Defines the interface for the vector.
  *

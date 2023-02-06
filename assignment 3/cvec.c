@@ -50,9 +50,10 @@ void VectorDispose(vector *v) {
 	//we run the given VectorFreeFunction from the vector constructor on all elements
 	//which should free any dynamically allocated memory within v->elems
 	//then we just free v->elems
-
-	for (int i=0; i<VectorLength(v); i++) {
+	if (v-> != NULL) {
+		for (int i=0; i<VectorLength(v); i++) {
 		v->clean(VectorNth(v,i));
+		}
 	}
 	free(v->elems);
 }
@@ -81,7 +82,7 @@ void VectorInsert(vector *v, const void *elemAddr, int position) {
 }
 
 void VectorAppend(vector *v, const void *elemAddr) {
-	
+
 	addElem(v, VectorLength(v), elemAddr);
 }
 
