@@ -117,9 +117,25 @@ void *cmap_get(const map *h, const char *key);
 /**
  * Function: cmap_remove
  * --------------------
- * removes the blob associated with the given string key
- *
- * An assert is raised if given address is NULL.
+ * removes the key:value pair associated with the given key
  */
 void cmap_remove(map *h, const char *key);
+
+/**
+ * Function: cmap_first
+ * --------------------
+ * Returns an arbitrary key from the hashmap
+ * which is intended as the first element in iteration
+ * of the hashmap
+ */
+char *cmap_first(map *h);
+
+/**
+ * Function: cmap_next
+ * --------------------
+ * Given the previous key, returns the next key in the hashmap
+ * (in the context of iteration). Returns NULL if the previous key
+ * was the last one.
+ */
+char *cmap_next(map *h, const char *prev);
 #endif

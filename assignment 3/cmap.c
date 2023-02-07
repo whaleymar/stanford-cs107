@@ -12,13 +12,14 @@ static void *valptr(void **blob);
 static void set_val(void **blob, const void *valAddr, size_t valsz);
 static void **new_blob(const char *key, size_t valsz);
 static void **next_blob(void **ptr);
+static void **get_blob(void **ptr, const char *key, char *found, void ***prev);
 
 //client functions:
 void cmap_new(map *h, int elemSize, int numBuckets, HashMapFreeFunction freefn) {
 
  	assert(elemSize>0 && numBuckets>0);
 
-	h->buckets = malloc(sizeof(char *) * numBuckets);
+	h->buckets = malloc(sizeof(void *) * numBuckets);
 	h->nbuckets = numBuckets;
 	h->valsz = elemSize;
 	h->clean = freefn;
@@ -29,7 +30,6 @@ void cmap_new(map *h, int elemSize, int numBuckets, HashMapFreeFunction freefn) 
 	}
 }
 
-//TODO: call h->clean on values
 void cmap_dispose(map *h) {
 	void **ptr;
 	void **tmp;
@@ -38,6 +38,7 @@ void cmap_dispose(map *h) {
 		do {
 			if (ptr==NULL) break;
 			tmp = next_blob(ptr); 
+			if (h->clean !=NULL) h->clean(valptr(ptr));
 			free(ptr);
 			ptr = tmp;
 		} while (1);
@@ -47,18 +48,12 @@ void cmap_dispose(map *h) {
 
 void *cmap_get(const map *h, const char *key) {
 	int ix = hash(key, h->nbuckets);
-	void **ptr = *get_bucket(h, ix);
-	
-	if (ptr!=NULL) {
-		// go through linkedlist looking for key, return value
-		do
-		 {
-		 	if (strcmp(key, keyptr(ptr))==0) {
-		 		return valptr(ptr);
-		 	}
-		 	ptr = next_blob(ptr);
-		 	if (ptr==NULL) break;
-		 } while (1);
+	void **ptr = get_bucket(h, ix);
+	if (*ptr!=NULL) { // only jump if bucket is not empty
+		char found_key = 0;
+
+		ptr = get_blob(*ptr, key, &found_key, NULL);
+		if (found_key==1) return valptr(ptr);
 	}
 	return NULL;
 }
@@ -66,33 +61,60 @@ void *cmap_get(const map *h, const char *key) {
 void cmap_put(map *h, const char *key, const void *valAddr) {
 	int ix = hash(key, h->nbuckets);
 	void **ptr = get_bucket(h, ix);
-	char found=0;
+	char found_key = 0;
 
-	if (*ptr!=NULL) {
-		// go through linkedlist looking for key,
-		ptr = next_blob(ptr);
-		do {
-		 	if (strcmp(key, keyptr(ptr))==0) {
-		 		found=1;
-		 		break;
-		 	}
-		 	if (*ptr==NULL) break;
-		 	ptr = next_blob(ptr);
-		} while (1);
+	if (*ptr!=NULL) { // only jump if bucket is not empty
+		ptr = get_blob(*ptr, key, &found_key, NULL);
 	}
-
-	if (!found) {
+	if (found_key==0) {
 		*ptr = new_blob(key, h->valsz);
 		ptr = next_blob(ptr);
 	}
-
 	set_val(ptr, valAddr, h->valsz);
 }
 
-//TODO; cmap_remove, cmap_first/cmap_next (for client iteration)
+
+//TODO; cmap_first/cmap_next (for client iteration)
 void cmap_remove(map *h, const char *key) {
+	int ix = hash(key, h->nbuckets);
+	void **ptr = get_bucket(h, ix);
+	char found_key = 0;
+	void **prev_ptr = ptr;
 
+	ptr = get_blob(*ptr, key, &found_key, &prev_ptr);
+	if (found_key==0) return;
 
+	if (h->clean !=NULL) h->clean(valptr(ptr)); // free value if needed
+
+	if (prev_ptr!=NULL) {
+		//chain previous linked list block to *ptr
+		*prev_ptr = *ptr;
+	}
+
+	free(ptr);//free blob
+}
+
+char *cmap_first(map *h) {
+	return keyptr(h->buckets[0]);
+}
+
+char *cmap_next(map *h, const char *prev) {
+	int ix = hash(prev, h->nbuckets);
+	void **ptr = get_bucket(h, ix);
+
+	if (*ptr!=NULL) { // only jump if bucket is not empty
+		char found_key = 0; // useless in this context (should always end up as 1)
+		ptr = get_blob(*ptr, prev, &found_key, NULL);
+		// assert (found_key==1);
+		if (*ptr!=NULL) return keyptr(*ptr);
+		// prev is at the end of the bucket, iterate through buckets to find 
+		// the next non-null key
+		for (ix+=1; ix<h->nbuckets; ix++) {
+			ptr = get_bucket(h, ix);
+			if (*ptr!=NULL) return keyptr(*ptr);
+		}
+	}
+	return NULL;
 }
 
 ////////////////////////////////
@@ -147,4 +169,28 @@ static void **new_blob(const char *key, size_t valsz) {
 //given a blob, gets next one in linked list
 static void **next_blob(void **ptr) {
 	return *ptr;
+}
+
+//helper function to search a bucket for a given key
+//does most of the work of cmap_get, but returns the block of memory instead of the value within
+static void **get_blob(void **ptr, const char *key, char *found, void ***prev) {
+	//ptr is the first linked list element in the key's bucket
+	//found is an indicator of whether we found the key
+	//prev points to the previous value of pointer
+
+	*found=0;
+	if (ptr!=NULL) {
+		// go through linkedlist looking for key, return blob if found
+		do
+		 {
+		 	if (strcmp(key, keyptr(ptr))==0) {
+		 		*found=1;
+		 		break;
+		 	}
+		 	if (*ptr==NULL) break;
+		 	if (prev!=NULL)	*prev = ptr;
+		 	ptr = next_blob(ptr);
+		 } while (1);
+	}
+	return ptr;
 }
