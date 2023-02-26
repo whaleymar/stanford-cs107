@@ -73,8 +73,6 @@ void cmap_put(map *h, const char *key, const void *valAddr) {
 	set_val(ptr, valAddr, h->valsz);
 }
 
-
-//TODO; cmap_first/cmap_next (for client iteration)
 void cmap_remove(map *h, const char *key) {
 	int ix = hash(key, h->nbuckets);
 	void **ptr = get_bucket(h, ix);
@@ -144,7 +142,7 @@ static char *keyptr(void **blob) {
 static void *valptr(void **blob) {
 	char *ptr = keyptr(blob); //find key
 	ptr = strchr(ptr, '\0'); //find string terminator
-	assert(ptr!=NULL); //make sure it was found
+	// assert(ptr!=NULL); // for testing: make sure it was found
 
 	return ptr+1;
 }

@@ -1,0 +1,325 @@
+Phase 1:
+	Solution Steps:
+	 - open bomb executable in gdb
+	 - disassemble phase_1, see the following:
+
+	 Dump of assembler code for function phase_1:
+	   0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+	   0x0000000000400e91 <+4>:     mov    $0x402490,%esi
+	   0x0000000000400e96 <+9>:     callq  0x401415 <strings_not_equal>
+	   0x0000000000400e9b <+14>:    test   %eax,%eax
+	   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+	   0x0000000000400e9f <+18>:    callq  0x401514 <explode_bomb>
+	   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+	   0x0000000000400ea8 <+27>:    retq
+	 End of assembler dump.
+
+	 - there's a mov to %esi from memory before calling <strings_not_equal>
+	 - solution is probably there
+	 - set breakpoint at 0x0000000000400e9b
+	 - after stepping, run x/s 0x402490
+
+	Solution: "When I get angry, Mr. Bigglesworth gets upset."
+
+
+Phase 2:
+	Solution Steps:
+	 - disassemble phase_2:
+
+	 Dump of assembler code for function phase_2:
+	=> 0x0000000000400ea9 <+0>:     push   %rbp
+	   0x0000000000400eaa <+1>:     push   %rbx
+	   0x0000000000400eab <+2>:     sub    $0x28,%rsp
+	   0x0000000000400eaf <+6>:     mov    %fs:0x28,%rax
+	   0x0000000000400eb8 <+15>:    mov    %rax,0x18(%rsp)
+	   0x0000000000400ebd <+20>:    xor    %eax,%eax
+	   0x0000000000400ebf <+22>:    mov    %rsp,%rsi
+	   0x0000000000400ec2 <+25>:    callq  0x401536 <read_six_numbers>
+	   0x0000000000400ec7 <+30>:    cmpl   $0x0,(%rsp)
+	   0x0000000000400ecb <+34>:    jne    0x400ed4 <phase_2+43>
+	   0x0000000000400ecd <+36>:    cmpl   $0x1,0x4(%rsp)
+	   0x0000000000400ed2 <+41>:    je     0x400ed9 <phase_2+48>
+	   0x0000000000400ed4 <+43>:    callq  0x401514 <explode_bomb>
+	   0x0000000000400ed9 <+48>:    mov    %rsp,%rbx
+	   0x0000000000400edc <+51>:    lea    0x10(%rsp),%rbp
+	   0x0000000000400ee1 <+56>:    mov    0x4(%rbx),%eax
+	   0x0000000000400ee4 <+59>:    add    (%rbx),%eax
+	   0x0000000000400ee6 <+61>:    cmp    %eax,0x8(%rbx)
+	   0x0000000000400ee9 <+64>:    je     0x400ef0 <phase_2+71>
+	   0x0000000000400eeb <+66>:    callq  0x401514 <explode_bomb>
+	   0x0000000000400ef0 <+71>:    add    $0x4,%rbx
+	   0x0000000000400ef4 <+75>:    cmp    %rbp,%rbx
+	   0x0000000000400ef7 <+78>:    jne    0x400ee1 <phase_2+56>
+	   0x0000000000400ef9 <+80>:    mov    0x18(%rsp),%rax
+	   0x0000000000400efe <+85>:    xor    %fs:0x28,%rax
+	   0x0000000000400f07 <+94>:    je     0x400f0e <phase_2+101>
+	   0x0000000000400f09 <+96>:    callq  0x400b00 <__stack_chk_fail@plt>
+	   0x0000000000400f0e <+101>:   add    $0x28,%rsp
+	   0x0000000000400f12 <+105>:   pop    %rbx
+	   0x0000000000400f13 <+106>:   pop    %rbp
+	   0x0000000000400f14 <+107>:   retq
+	 End of assembler dump.
+
+	 - multiple potential explosions here. also one in <read_six_numbers>:
+
+	 Dump of assembler code for function read_six_numbers:
+	=> 0x0000000000401536 <+0>:     sub    $0x8,%rsp
+	   0x000000000040153a <+4>:     mov    %rsi,%rdx
+	   0x000000000040153d <+7>:     lea    0x4(%rsi),%rcx
+	   0x0000000000401541 <+11>:    lea    0x14(%rsi),%rax
+	   0x0000000000401545 <+15>:    push   %rax
+	   0x0000000000401546 <+16>:    lea    0x10(%rsi),%rax
+	   0x000000000040154a <+20>:    push   %rax
+	   0x000000000040154b <+21>:    lea    0xc(%rsi),%r9
+	   0x000000000040154f <+25>:    lea    0x8(%rsi),%r8
+	   0x0000000000401553 <+29>:    mov    $0x402683,%esi
+	   0x0000000000401558 <+34>:    mov    $0x0,%eax
+	   0x000000000040155d <+39>:    callq  0x400bb0 <__isoc99_sscanf@plt>
+	   0x0000000000401562 <+44>:    add    $0x10,%rsp
+	   0x0000000000401566 <+48>:    cmp    $0x5,%eax
+	   0x0000000000401569 <+51>:    jg     0x401570 <read_six_numbers+58>
+	   0x000000000040156b <+53>:    callq  0x401514 <explode_bomb>
+	   0x0000000000401570 <+58>:    add    $0x8,%rsp
+	   0x0000000000401574 <+62>:    retq
+	 End of assembler dump.
+
+	 - at <+51> there's a jg that skips the bomb if %eax is greater than 5
+	 - breaking at 0x000000000040155d shows we're running sscanf(%rdi, "%d %d %d %d %d %d", "", "", ...);
+	 - sscanf returns the number of variables filled, so our input must have >=6 numbers in it (space delimited)
+
+	  - back in phase_2, there's a check at 0x0000000000400ec7 to see
+	  if rsp is pointing to a zero value. after some trial and error, I found that rsp is pointing to my phase 2 answer. 
+
+	  --->So the first number is zero.
+
+	  - then a similar check happens for *(&rsp + 4 bytes) == 1 --it seems at this point that my answer is being stored in an array because they are stored concurrently in memory -- 
+
+	  --->so my second number should be 1.
+	  
+	  - the next part of this function appears to be a loop over the rest of our numbers:
+
+	   0x0000000000400ed9 <+48>:    mov    %rsp,%rbx
+	   0x0000000000400edc <+51>:    lea    0x10(%rsp),%rbp
+	   0x0000000000400ee1 <+56>:    mov    0x4(%rbx),%eax
+	   0x0000000000400ee4 <+59>:    add    (%rbx),%eax
+	   0x0000000000400ee6 <+61>:    cmp    %eax,0x8(%rbx)
+	   0x0000000000400ee9 <+64>:    je     0x400ef0 <phase_2+71>
+	   0x0000000000400eeb <+66>:    callq  0x401514 <explode_bomb>
+	   0x0000000000400ef0 <+71>:    add    $0x4,%rbx
+	   0x0000000000400ef4 <+75>:    cmp    %rbp,%rbx
+	   0x0000000000400ef7 <+78>:    jne    0x400ee1 <phase_2+56>
+	   0x0000000000400ef9 <+80>:    mov    0x18(%rsp),%rax
+	   0x0000000000400efe <+85>:    xor    %fs:0x28,%rax
+	   0x0000000000400f07 <+94>:    je     0x400f0e <phase_2+101>
+	   0x0000000000400f09 <+96>:    callq  0x400b00 <__stack_chk_fail@plt>
+	   0x0000000000400f0e <+101>:   add    $0x28,%rsp
+	   0x0000000000400f12 <+105>:   pop    %rbx
+	   0x0000000000400f13 <+106>:   pop    %rbp
+	   0x0000000000400f14 <+107>:   retq
+
+	   - first we copy rsp into %rbx, so %rbx points to our numbers. Then at +56 we put the second number (1) into %eax and the next instruction adds the first number (0) to %eax, so %eax=1+0=1, and this value should be equal to our 3rd number.
+
+	   ---> so the third number is also 1.
+
+	   - at +71 %rbx points to the next/second number (1) and at +75 it's compared to %rbp. This is the loop's stop condition -- the address of our array pointer is equal to lea 0x10(%rsp) --> we have looped over 4 values. Adding to our initial 2 numbers checked in the loop, we should have 6 numbers total.
+
+	   - Tracing the loop to see what our next number needs to be after 0 1 1:
+	   - let my array of numbers be arr, let i=1:
+	    - %eax = arr[i+1] = 1
+	    - %eax += arr[i] = 1+1 = 2
+	    - arr[i+2] must equal %eax
+	    ---> the fourth number is 2
+	    - arr = 0 1 1 2
+	   let i=2:
+	    - %eax = 2, %eax +=1 = 3
+	    ---> the fifth number is 3
+	    - arr = 0 1 1 2 3
+	   let i=3:
+	    - %eax = 3, %eax +=2 = 5
+	    ---> the sixth number is 5
+
+	Solution: 0 1 1 2 3 5
+
+
+
+Phase 3:
+	Solution Steps:
+	 - disassemble phase_3 (will paste in sections. it's long.)
+	 - first hurdle:
+	0x0000000000400f3d <+40>:    callq  0x400bb0 <__isoc99_sscanf@plt>
+    0x0000000000400f42 <+45>:    cmp    $0x2,%eax
+    0x0000000000400f45 <+48>:    jg     0x400f4c <phase_3+55>
+    0x0000000000400f47 <+50>:    callq  0x401514 <explode_bomb>
+
+     - sscanf's first arg is the input phrase, printing rsi in gdb shows second arg is "%d %c %d"
+     - jump condition shows we need to fill all 3 (int, char, int)
+     - the program checks that 0x10(%rsp) is <=7. 0x10(%rsp) seems to be the first number in our input
+     - then we move 0x10(%rsp) to eax and unconditional jump to 0x0000000000400f84:
+
+   0x0000000000400f84 <+111>:   mov    $0x77,%eax
+   0x0000000000400f89 <+116>:   cmpl   $0x36a,0x14(%rsp)
+   0x0000000000400f91 <+124>:   je     0x40105d <phase_3+328>
+   0x0000000000400f97 <+130>:   callq  0x401514 <explode_bomb>
+
+     - puts 119 into eax, compares 0x14(%rsp) to 874. 0x14(%rsp) seems to be the second number
+     - with 1 a 874, I get to the last bomb check:
+   0x000000000040105d <+328>:   cmp    0xf(%rsp),%al
+   0x0000000000401061 <+332>:   je     0x401068 <phase_3+339>
+   0x0000000000401063 <+334>:   callq  0x401514 <explode_bomb>
+
+     - 0xf(%rsp) seems to be the unicode number of the character I entered. 119 = 'w', so my final string is 1 w 874
+
+Phase 4:
+	disassembled code:
+
+   0x00000000004010c0 <+0>:     sub    $0x18,%rsp
+   0x00000000004010c4 <+4>:     mov    %fs:0x28,%rax
+   0x00000000004010cd <+13>:    mov    %rax,0x8(%rsp)
+   0x00000000004010d2 <+18>:    xor    %eax,%eax
+   0x00000000004010d4 <+20>:    lea    0x4(%rsp),%rcx
+   0x00000000004010d9 <+25>:    mov    %rsp,%rdx
+   0x00000000004010dc <+28>:    mov    $0x40268f,%esi
+   0x00000000004010e1 <+33>:    callq  0x400bb0 <__isoc99_sscanf@plt>
+   0x00000000004010e6 <+38>:    cmp    $0x2,%eax
+   0x00000000004010e9 <+41>:    jne    0x4010f1 <phase_4+49>
+   0x00000000004010eb <+43>:    cmpl   $0xe,(%rsp)
+   0x00000000004010ef <+47>:    jbe    0x4010f6 <phase_4+54>
+   0x00000000004010f1 <+49>:    callq  0x401514 <explode_bomb>
+   0x00000000004010f6 <+54>:    mov    $0xe,%edx
+   0x00000000004010fb <+59>:    mov    $0x0,%esi
+   0x0000000000401100 <+64>:    mov    (%rsp),%edi
+   0x0000000000401103 <+67>:    callq  0x401082 <func4>
+   0x0000000000401108 <+72>:    cmp    $0x3,%eax
+   0x000000000040110b <+75>:    jne    0x401114 <phase_4+84>
+   0x000000000040110d <+77>:    cmpl   $0x3,0x4(%rsp)
+   0x0000000000401112 <+82>:    je     0x401119 <phase_4+89>
+   0x0000000000401114 <+84>:    callq  0x401514 <explode_bomb>
+   0x0000000000401119 <+89>:    mov    0x8(%rsp),%rax
+   0x000000000040111e <+94>:    xor    %fs:0x28,%rax
+   0x0000000000401127 <+103>:   je     0x40112e <phase_4+110>
+   0x0000000000401129 <+105>:   callq  0x400b00 <__stack_chk_fail@plt>
+   0x000000000040112e <+110>:   add    $0x18,%rsp
+   0x0000000000401132 <+114>:   retq
+
+    - sscanf again, call is sscanf(input, "%d %d") --> 2 ints
+    - first int should be <=14
+    - then we go to func4, which seems recursive:
+
+   0x0000000000401082 <+0>:     sub    $0x8,%rsp
+   0x0000000000401086 <+4>:     mov    %edx,%eax
+   0x0000000000401088 <+6>:     sub    %esi,%eax
+   0x000000000040108a <+8>:     mov    %eax,%ecx
+   0x000000000040108c <+10>:    shr    $0x1f,%ecx
+   0x000000000040108f <+13>:    add    %ecx,%eax
+   0x0000000000401091 <+15>:    sar    %eax
+   0x0000000000401093 <+17>:    lea    (%rax,%rsi,1),%ecx
+   0x0000000000401096 <+20>:    cmp    %edi,%ecx
+   0x0000000000401098 <+22>:    jle    0x4010a6 <func4+36>
+   0x000000000040109a <+24>:    lea    -0x1(%rcx),%edx
+   0x000000000040109d <+27>:    callq  0x401082 <func4>
+   0x00000000004010a2 <+32>:    add    %eax,%eax
+   0x00000000004010a4 <+34>:    jmp    0x4010bb <func4+57>
+   0x00000000004010a6 <+36>:    mov    $0x0,%eax
+   0x00000000004010ab <+41>:    cmp    %edi,%ecx
+   0x00000000004010ad <+43>:    jge    0x4010bb <func4+57>
+   0x00000000004010af <+45>:    lea    0x1(%rcx),%esi
+   0x00000000004010b2 <+48>:    callq  0x401082 <func4>
+   0x00000000004010b7 <+53>:    lea    0x1(%rax,%rax,1),%eax
+   0x00000000004010bb <+57>:    add    $0x8,%rsp
+   0x00000000004010bf <+61>:    retq
+
+    - is called with %rdi= <first number> , %rsi=0, and %rdx=14
+    - func4 must return 3
+    - second input number should also be 3
+    - %ecx=7 on first iteration, first num should be >7... is that our base case?
+    - I couldn't figure out how func4 works *exactly* but I had a small range of numbers to work with, so I did some trial and error and eventually landed on 12 as the first number.
+
+    Solution: 12 3
+
+Phase 5:
+	- sscanf again. pattern: "%d %d" --> 2 ints
+	- num &= 0xf is run, so we only keep the first 15 bits of our number
+	- explode if num=15
+
+   0x0000000000401133 <+0>:     sub    $0x18,%rsp
+   0x0000000000401137 <+4>:     mov    %fs:0x28,%rax
+   0x0000000000401140 <+13>:    mov    %rax,0x8(%rsp)
+   0x0000000000401145 <+18>:    xor    %eax,%eax
+   0x0000000000401147 <+20>:    lea    0x4(%rsp),%rcx
+   0x000000000040114c <+25>:    mov    %rsp,%rdx
+   0x000000000040114f <+28>:    mov    $0x40268f,%esi
+   0x0000000000401154 <+33>:    callq  0x400bb0 <__isoc99_sscanf@plt>
+   0x0000000000401159 <+38>:    cmp    $0x1,%eax
+   0x000000000040115c <+41>:    jg     0x401163 <phase_5+48>
+   0x000000000040115e <+43>:    callq  0x401514 <explode_bomb>
+   0x0000000000401163 <+48>:    mov    (%rsp),%eax
+   0x0000000000401166 <+51>:    and    $0xf,%eax
+   0x0000000000401169 <+54>:    mov    %eax,(%rsp)
+   0x000000000040116c <+57>:    cmp    $0xf,%eax
+   0x000000000040116f <+60>:    je     0x4011a0 <phase_5+109>
+   0x0000000000401171 <+62>:    mov    $0x0,%ecx
+   0x0000000000401176 <+67>:    mov    $0x0,%edx
+   0x000000000040117b <+72>:    add    $0x1,%edx
+   0x000000000040117e <+75>:    cltq
+   0x0000000000401180 <+77>:    mov    0x402540(,%rax,4),%eax
+   0x0000000000401187 <+84>:    add    %eax,%ecx
+   0x0000000000401189 <+86>:    cmp    $0xf,%eax
+   0x000000000040118c <+89>:    jne    0x40117b <phase_5+72>
+   0x000000000040118e <+91>:    movl   $0xf,(%rsp)
+   0x0000000000401195 <+98>:    cmp    $0xf,%edx
+   0x0000000000401198 <+101>:   jne    0x4011a0 <phase_5+109>
+   0x000000000040119a <+103>:   cmp    0x4(%rsp),%ecx
+   0x000000000040119e <+107>:   je     0x4011a5 <phase_5+114>
+   0x00000000004011a0 <+109>:   callq  0x401514 <explode_bomb>
+   0x00000000004011a5 <+114>:   mov    0x8(%rsp),%rax
+   0x00000000004011aa <+119>:   xor    %fs:0x28,%rax
+   0x00000000004011b3 <+128>:   je     0x4011ba <phase_5+135>
+   0x00000000004011b5 <+130>:   callq  0x400b00 <__stack_chk_fail@plt>
+   0x00000000004011ba <+135>:   add    $0x18,%rsp
+   0x00000000004011be <+139>:   retq
+
+    - we're in a loop, and we need to loop 14 times to not explode
+    - not really sure what's happening at +77; 
+    - 0x402540 points to 10, so we're running 
+    mov $0xa(,%rax,4),%eax... but I have no idea what this means since the first argument is empty! I've never seen this before and I can't find anything online about it
+    -- with first num=1, it changes to 2, then 14
+    -- with first num=0, it changes to 10, 1, 2, 14, 6, 15
+    -- 1,2,14 is repeated
+   there's some sort of cycle here. numbers between zero and 15 with no cycles. now we just find the first number
+    -- with first num=13, changes to 9, 4, 8, 0, ...
+    -- before 13 is 11
+    -- starting with 3: 3, 7, 11
+    - 5->12->3
+    - first number is 5!
+    - after that, the second number is compared to %ecx; they must be equal.
+    - ecx has eax added to it in each iteration, so ecx must be sum(0 + 1 + 2 + ... + 15) (120) minus the first number in the sequence, so 115
+
+    - Solution: 5 115
+
+
+Phase 6:
+	- calls read_six_numbers, so that's our format
+	- first number must be <=6 and >0
+	- r13 points to first number
+	- r14d=0
+	- starts loop between +48 and +109, loops 5.5 times:
+		- r14d+=1
+		- eax=curent number - 1
+		- ebx=r14d, then loops 5 times between +81 and +103
+			---> I believe this loop checks that there are no repeated numbers
+		- r13 points to next number --> first 6 numbers must be <=6
+
+	- then a bunch of stuff happens and we enter another loop for 5 iterations
+	- we start with %eax = some number x, which must be less than or equal to some other number y (pointed to by %rbx)
+	- each iteration, y=x and x undergoes some transformation; x<=y still required
+	- after some trial and error, it seems like each of our numbers corresponds to a key, and I need to enter the numbers in decreasing key order, where
+	{
+		1=218,
+		2=123,
+		3=874,
+		4=727,
+		5=648,
+		6=742
+	}
+	
+	Solution: 3 6 4 5 1 2
